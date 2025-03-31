@@ -12,31 +12,24 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v2
 
-      - name: Set up SSH
-        uses: webfactory/ssh-agent@v0.5.0
-        with:
-          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
-
-      - name: Add SSH keyscan
+      - name: Set up SSH Key
         run: |
           mkdir -p ~/.ssh
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
           ssh-keyscan -H ${{ secrets.REMOTE_HOST }} >> ~/.ssh/known_hosts
           chmod 644 ~/.ssh/known_hosts
-
-      - name: Verify SSH Connection
-        run: |
-          ssh -o StrictHostKeyChecking=no ${{ secrets.REMOTE_USER }}@${{ secrets.REMOTE_HOST }} "echo 'SSH connection successful'"
 
       - name: Deployment from main to mca_app
         if: github.ref == 'refs/heads/main'
         run: |
-          rsync -avz -e "ssh -o StrictHostKeyChecking=no" --exclude={'.gitignore','.git','.github/'} "$GITHUB_WORKSPACE/" ${{ secrets.USERNAME }}@${{ secrets.REMOTE_HOST }}:${{ secrets.DESTINATION_PATH }} --rsync-path="sudo rsync"
-          ssh -o StrictHostKeyChecking=no ${{ secrets.REMOTE_USER }}@${{ secrets.REMOTE_HOST }} "sudo chown -R ubuntu:ubuntu ${{ secrets.DESTINATION_PATH }}"
-          ssh -o StrictHostKeyChecking=no ${{ secrets.REMOTE_USER }}@${{ secrets.REMOTE_HOST }} "sudo chmod -R 777 ${{ secrets.STORAGE_PATH }}"
+          rsync -avz -e "ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa" --exclude '.gitignore' --exclude '.git' --exclude '.github/' "$GITHUB_WORKSPACE/" ${{ secrets.USERNAME }}@${{ secrets.REMOTE_HOST }}:${{ secrets.DESTINATION_PATH }} --rsync-path="sudo rsync"
+          ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa ${{ secrets.USERNAME }}@${{ secrets.REMOTE_HOST }} "sudo chown -R ubuntu:ubuntu ${{ secrets.DESTINATION_PATH }}"
+          ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa ${{ secrets.USERNAME }}@${{ secrets.REMOTE_HOST }} "sudo chmod -R 777 ${{ secrets.STORAGE_PATH }}"
 
       - name: Deployment from main branch to stage
         if: github.ref == 'refs/heads/main'
         run: |
-          rsync -avz -e "ssh -o StrictHostKeyChecking=no" --exclude={'.gitignore','.git','.github/'} "$GITHUB_WORKSPACE/" ${{ secrets.USERNAME }}@${{ secrets.REMOTE_HOST }}:${{ secrets.STAGE_DESTINATION_PATH }} --rsync-path="sudo rsync"
-          ssh -o StrictHostKeyChecking=no ${{ secrets.REMOTE_USER }}@${{ secrets.REMOTE_HOST }} "sudo chown -R ubuntu:ubuntu ${{ secrets.STAGE_DESTINATION_PATH }}"
-          ssh -o StrictHostKeyChecking=no ${{ secrets.REMOTE_USER }}@${{ secrets.REMOTE_HOST }} "sudo chmod -R 777 ${{ secrets.STAGE_STORAGE_PATH }}"
+          rsync -avz -e "ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa" --exclude '.gitignore' --exclude '.git' --exclude '.github/' "$GITHUB_WORKSPACE/" ${{ secrets.USERNAME }}@${{ secrets.REMOTE_HOST }}:${{ secrets.STAGE_DESTINATION_PATH }} --rsync-path="sudo rsync"
+          ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa ${{ secrets.USERNAME }}@${{ secrets.REMOTE_HOST }} "sudo chown -R ubuntu:ubuntu ${{ secrets.STAGE_DESTINATION_PATH }}"
+          ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa ${{ secrets.USERNAME }}@${{ secrets.REMOTE_HOST }} "sudo chmod -R 777 ${{ secrets.STAGE_STORAGE_PATH }}"
