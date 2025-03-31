@@ -24,12 +24,12 @@ jobs:
       - name: Deployment from main to mca_app
         if: github.ref == 'refs/heads/main'
         run: |
-         
+         rsync -avz -e "ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa" --exclude '.gitignore' --exclude '.git' --exclude '.github/' "$GITHUB_WORKSPACE/" ${{ secrets.REMOTE_USER }}@${{ secrets.REMOTE_HOST }}:${{ secrets.DESTINATION_PATH }} --rsync-path="sudo rsync"
           ssh -o StrictHostKeyChecking=no ${{ secrets.REMOTE_USER }}@${{ secrets.REMOTE_HOST }} "sudo chown -R ubuntu:ubuntu ${{ secrets.DESTINATION_PATH }}"
           ssh -o StrictHostKeyChecking=no ${{ secrets.REMOTE_USER }}@${{ secrets.REMOTE_HOST }} "sudo chmod -R 777 ${{ secrets.STORAGE_PATH }}"
       - name: Deployment from main branch to stage
         if: github.ref == 'refs/heads/main'
         run: |
-         
+         rsync -avz -e "ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa" --exclude '.gitignore' --exclude '.git' --exclude '.github/' "$GITHUB_WORKSPACE/" ${{ secrets.REMOTE_USER }}@${{ secrets.REMOTE_HOST }}:${{ secrets.STAGE_DESTINATION_PATH }} --rsync-path="sudo rsync"
           ssh -o StrictHostKeyChecking=no ${{ secrets.REMOTE_USER }}@${{ secrets.REMOTE_HOST }} "sudo chown -R ubuntu:ubuntu ${{ secrets.STAGE_DESTINATION_PATH }}"
           ssh -o StrictHostKeyChecking=no ${{ secrets.REMOTE_USER }}@${{ secrets.REMOTE_HOST }} "sudo chmod -R 777 ${{ secrets.STAGE_STORAGE_PATH }}"
