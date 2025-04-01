@@ -12,13 +12,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v2
 
-      # 🛠️ Debug Secrets (Optional: Check if variables are set correctly)
-      - name: Debug Secrets
-        run: |
-          echo "REMOTE_USER: ${{ secrets.REMOTE_USER }}"
-          echo "REMOTE_HOST: ${{ secrets.REMOTE_HOST }}"
-
-      # 🛠️ Set up SSH Key (Add here before any SSH command)
+      # 🛠️ Set up SSH Key (Ensure SSH key is configured before any SSH command)
       - name: Set up SSH Key
         run: |
           mkdir -p ~/.ssh
@@ -27,15 +21,38 @@ jobs:
           ssh-keyscan -H ${{ secrets.REMOTE_HOST }} >> ~/.ssh/known_hosts
           chmod 644 ~/.ssh/known_hosts
 
+      # ✅ Debug Secrets (Optional: Check if variables are set correctly)
+      - name: Debug Secrets
+        run: |
+          echo "REMOTE_USER: ${{ secrets.REMOTE_USER }}"
+          echo "REMOTE_HOST: ${{ secrets.REMOTE_HOST }}"
+
       # ✅ Verify SSH connection
       - name: Verify SSH Connection
+        env:
+          REMOTE_USER: ${{ secrets.REMOTE_USER }}
+          REMOTE_HOST: ${{ secrets.REMOTE_HOST }}
         run: |
-          ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no ${{ secrets.REMOTE_USER }}@${{ secrets.REMOTE_HOST }} "echo 'SSH connection successful'"
+          ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no "$REMOTE_USER@$REMOTE_HOST" "echo 'SSH connection successful'"
 
-      # 🚀 Proceed with Deployment
+      # 🚀 Deployment from main to mca_app
       - name: Deployment from main to mca_app
         if: github.ref == 'refs/heads/main'
         run: |
-          rsync -avz -e "ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no" --exclude '.gitignore' --exclude '.git' --exclude '.github/' "$GITHUB_WORKSPACE/" ${{ secrets.REMOTE_USER }}@${{ secrets.REMOTE_HOST }}:${{ secrets.DESTINATION_PATH }} --rsync-path="sudo rsync"
-          ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no ${{ secrets.REMOTE_USER }}@${{ secrets.REMOTE_HOST }} "sudo chown -R ubuntu:ubuntu ${{ secrets.DESTINATION_PATH }}"
-          ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no ${{ secrets.REMOTE_USER }}@${{ secrets.REMOTE_HOST }} "sudo chmod -R 777 ${{ secrets.STORAGE_PATH }}"
+          rsync -avz -e "ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no" \
+            --exclude '.gitignore' --exclude '.git' --exclude '.github/' \
+            "$GITHUB_WORKSPACE/" "$REMOTE_USER@$REMOTE_HOST:${{ secrets.DESTINATION_PATH }}" --rsync-path="sudo rsync"
+          
+          ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no "$REMOTE_USER@$REMOTE_HOST" \
+            "sudo chown -R ubuntu:ubuntu ${{ secrets.DESTINATION_PATH }} && sudo chmod -R 777 ${{ secrets.STORAGE_PATH }}"
+
+      # 🚀 Deployment from main branch to stage
+      - name: Deployment from main branch to stage
+        if: github.ref == 'refs/heads/main'
+        run: |
+          rsync -avz -e "ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no" \
+            --exclude '.gitignore' --exclude '.git' --exclude '.github/' \
+            "$GITHUB_WORKSPACE/" "$REMOTE_USER@$REMOTE_HOST:${{ secrets.STAGE_DESTINATION_PATH }}" --rsync-path="sudo rsync"
+          
+          ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no "$REMOTE_USER@$REMOTE_HOST" \
+            "sudo chown -R ubuntu:ubuntu ${{ secrets.STAGE_DESTINATION_PATH }} && sudo chmod -R 777 ${{ secrets
