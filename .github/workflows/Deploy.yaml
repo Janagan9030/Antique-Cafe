@@ -12,35 +12,30 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v2
 
+      # 🛠️ Debug Secrets (Optional: Check if variables are set correctly)
       - name: Debug Secrets
         run: |
           echo "REMOTE_USER: ${{ secrets.REMOTE_USER }}"
           echo "REMOTE_HOST: ${{ secrets.REMOTE_HOST }}"
 
-      - name: Set up SSH Key and Known Hosts
+      # 🛠️ Set up SSH Key (Add here before any SSH command)
+      - name: Set up SSH Key
         run: |
           mkdir -p ~/.ssh
           echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
           ssh-keyscan -H ${{ secrets.REMOTE_HOST }} >> ~/.ssh/known_hosts
           chmod 644 ~/.ssh/known_hosts
-          eval "$(ssh-agent -s)"
-          ssh-add ~/.ssh/id_rsa
 
+      # ✅ Verify SSH connection
       - name: Verify SSH Connection
         run: |
           ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no ${{ secrets.REMOTE_USER }}@${{ secrets.REMOTE_HOST }} "echo 'SSH connection successful'"
 
+      # 🚀 Proceed with Deployment
       - name: Deployment from main to mca_app
         if: github.ref == 'refs/heads/main'
         run: |
           rsync -avz -e "ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no" --exclude '.gitignore' --exclude '.git' --exclude '.github/' "$GITHUB_WORKSPACE/" ${{ secrets.REMOTE_USER }}@${{ secrets.REMOTE_HOST }}:${{ secrets.DESTINATION_PATH }} --rsync-path="sudo rsync"
           ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no ${{ secrets.REMOTE_USER }}@${{ secrets.REMOTE_HOST }} "sudo chown -R ubuntu:ubuntu ${{ secrets.DESTINATION_PATH }}"
           ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no ${{ secrets.REMOTE_USER }}@${{ secrets.REMOTE_HOST }} "sudo chmod -R 777 ${{ secrets.STORAGE_PATH }}"
-
-      - name: Deployment from main branch to stage
-        if: github.ref == 'refs/heads/main'
-        run: |
-          rsync -avz -e "ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no" --exclude '.gitignore' --exclude '.git' --exclude '.github/' "$GITHUB_WORKSPACE/" ${{ secrets.REMOTE_USER }}@${{ secrets.REMOTE_HOST }}:${{ secrets.STAGE_DESTINATION_PATH }} --rsync-path="sudo rsync"
-          ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no ${{ secrets.REMOTE_USER }}@${{ secrets.REMOTE_HOST }} "sudo chown -R ubuntu:ubuntu ${{ secrets.STAGE_DESTINATION_PATH }}"
-          ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no ${{ secrets.REMOTE_USER }}@${{ secrets.REMOTE_HOST }} "sudo chmod -R 777 ${{ secrets.STAGE_STORAGE_PATH }}"
