@@ -55,4 +55,4 @@ jobs:
             "$GITHUB_WORKSPACE/" "$REMOTE_USER@$REMOTE_HOST:${{ secrets.STAGE_DESTINATION_PATH }}" --rsync-path="sudo rsync"
           
           ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no "$REMOTE_USER@$REMOTE_HOST" \
-            "sudo chown -R ubuntu:ubuntu ${{ secrets.STAGE_DESTINATION_PATH }} && sudo chmod -R 777 ${{ secrets
+            "sudo chown -R ubuntu:ubuntu ${{ secrets.STAGE_DESTINATION_PATH }} && sudo chmod -R 777 ${{ secrets.STAGE_STORAGE_PATH }}"
