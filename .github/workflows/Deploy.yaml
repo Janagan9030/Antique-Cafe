@@ -12,6 +12,11 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v2
 
+      - name: Debug Secrets
+        run: |
+          echo "REMOTE_USER: ${{ secrets.REMOTE_USER }}"
+          echo "REMOTE_HOST: ${{ secrets.REMOTE_HOST }}"
+
       - name: Set up SSH Key and Known Hosts
         run: |
           mkdir -p ~/.ssh
